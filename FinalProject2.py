@@ -45,14 +45,16 @@ models = {
         'model': DecisionTreeRegressor(random_state=16),
         'params': {
             'max_depth': [2, 4, 8, 16],
-            'min_samples_split': [2, 5, 10]
+            'min_samples_split': [2, 5, 10],
+            'min_samples_leaf': [1, 2, 4]
         }
     },
     'K-Nearest Neighbors Regressor': {
         'model': KNeighborsRegressor(),
         'params': {
             'n_neighbors': [2, 4, 8, 16],
-            'weights': ['uniform', 'distance']
+            'weights': ['uniform', 'distance'],
+            'leaf_size': [10,30,50]
         }
     },
     'Support Vector Regressor': {
@@ -61,7 +63,7 @@ models = {
             'C': [0.1, 1, 10],
             'kernel': ['linear', 'rbf'],
             'epsilon': [0.1, 0.2],
-            'gamma': ['scale', 'auto', 0.01, 0.1, 1]
+            'degree': [2, 3, 4]
         }
     }
 }
@@ -73,7 +75,7 @@ for model_name, config in models.items():
         estimator=config['model'],
         param_grid=config['params'],
         cv=10,
-        scoring='neg_root_mean_squared_error',
+        scoring='neg_mean_absolute_error',
         n_jobs=-1,
         verbose=1
     )
@@ -94,19 +96,57 @@ for model_name, config in models.items():
     y_test_pred_original = np.expm1(y_test_pred)
     
     train_rmse = np.sqrt(mean_squared_error(y_train_original, y_train_pred_original))
-    test_rmse = np.sqrt(mean_squared_error(y_test_original, y_test_pred_original))
+    test_rmse = math.sqrt(mean_squared_error(y_test_original, y_test_pred_original))
     train_r2 = r2_score(y_train_original, y_train_pred_original)
     test_r2 = r2_score(y_test_original, y_test_pred_original)
     
-    print('best_model:', best_model)
-    print('train_rmse:', train_rmse)
-    print('test_rmse:', test_rmse)
-    print('train_r2:', train_r2)
-    print('test_r2:',test_r2)
+    results.update({model_name:{"best_Params":grid_search.best_params_,
+                                "train_rmse":train_rmse,
+                                "train_r2":train_r2,
+                                "test_rmse":test_rmse,
+                                "test_r2":test_r2,
+                                "y_test":y_test_original,
+                                "y_test_pred":y_test_pred_original}})
     
-# Example scatter plot of predictions vs true values (test set)
-plt.scatter(y_test_original, y_test_pred_original, alpha=0.6)
-plt.xlabel("True Charges")
-plt.ylabel("Predicted Charges")
-plt.title("Predicted vs True (Back-Transformed)")
-plt.show()
+plt.style.use('ggplot')
+
+for model in results:
+    fig_size = (10, 8)
+
+    plt.figure(figsize=fig_size)
+    plt.scatter(results[model]["y_test"], results[model]["y_test_pred"], 
+                alpha=0.7, s=60, color='steelblue', edgecolors='navy', linewidth=0.5)
+    min_val = min(min(results[model]["y_test"]), min(results[model]["y_test_pred"]))
+    max_val = max(max(results[model]["y_test"]), max(results[model]["y_test_pred"]))
+    plt.plot([min_val, max_val], [min_val, max_val], 'r--', linewidth=2)
+    plt.grid(True, alpha=0.3)
+    plt.xlabel("True Charges", fontsize=12)
+    plt.ylabel("Predicted Charges", fontsize=12)
+    plt.title(f"Predicted vs True Charges - {model}", fontsize=14, fontweight='bold')
+    plt.legend()
+    plt.tight_layout()
+    plt.show()
+
+    #Residual Plot (Test)
+    residuals = results[model]["y_test"] - results[model]["y_test_pred"]
+    plt.figure(figsize=fig_size)
+    plt.scatter(results[model]["y_test_pred"], residuals, 
+                alpha=0.7, s=60, color='darkorange', edgecolors='brown', linewidth=0.5)
+    plt.axhline(y=0, color='r', linestyle='--', linewidth=2)
+    plt.grid(True, alpha=0.3)
+    plt.xlabel("Predicted Charges (Test)", fontsize=12)
+    plt.ylabel("Residuals (Test)", fontsize=12)
+    plt.title(f"Residuals vs Predicted Charges (Test) - {model}", fontsize=14, fontweight='bold')
+    plt.tight_layout()
+    plt.show()
+    
+    #Histogram of Residuals (Test)
+    plt.figure(figsize=fig_size)
+    plt.hist(residuals, bins=50, density=True, color='lightgreen', 
+             edgecolor='darkgreen', linewidth=1.2, alpha=0.7)
+    plt.grid(True, alpha=0.3)
+    plt.xlabel("Residuals (Test)", fontsize=12)
+    plt.ylabel("Density", fontsize=12)
+    plt.title(f"Distribution of Residuals (Test) - {model}", fontsize=14, fontweight='bold')
+    plt.tight_layout()
+    plt.show()
