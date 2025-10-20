@@ -31,10 +31,10 @@ Key features:
 ---
 
 ## Dataset  
-**Source**: Kaggle 
-**Size & Structure**: 1338 rows X 7 columns  
-**Description**: It includes demographic and health-related variables such as age, sex, BMI, number of children, smoking status, and residential region in the US.
-**Pre-processing notes**: Training dataset: 80% and testing dataset: 20%
+- **Source**: Kaggle 
+- **Size & Structure**: 1338 rows X 7 columns  
+- **Description**: It includes demographic and health-related variables such as age, sex, BMI, number of children, smoking status, and residential region in the US.
+- **Pre-processing notes**: Training dataset: 80% and testing dataset: 20%
 
 ---
 
